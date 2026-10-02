@@ -8,7 +8,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Bot Token and Admin ID provided by user
+# Bot Token and Admin ID
 TOKEN = "8874940658:AAFV6FcKwFJWGVzNC6qq213dNoiHA-p_xK0"
 ADMIN_ID = 5624448603
 
@@ -54,7 +54,7 @@ def get_total_users_count():
     conn.close()
     return count
 
-# Track both old members (when they message) and new members (when they join)
+# Track members
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.new_chat_members:
         for member in update.message.new_chat_members:
@@ -66,7 +66,7 @@ async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         add_user(user.id, user.username, user.full_name)
 
-# /start command with interactive buttons for Admin
+# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_ID:
@@ -83,7 +83,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# /stats command to check how many users are stored
+# /stats command
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_ID:
@@ -101,7 +101,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode="Markdown")
         await update.callback_query.answer()
 
-# /broadcast command implementation
+# /broadcast command
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_ID:
@@ -137,7 +137,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# Inline button callback handler
+# Inline button callback
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
@@ -155,23 +155,35 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown"
         )
 
-def main():
+# Main async runner (Python 3.12, 3.13, 3.14 compatible)
+async def run_bot():
     init_db()
     
-    # Build application
     application = Application.builder().token(TOKEN).build()
 
-    # Handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CallbackQueryHandler(button_handler))
-    
-    # Track message senders and new chat members across groups/chats
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, track_users))
 
     print("Bot is up and running...")
-    application.run_polling()
+    
+    # Initialize and start polling asynchronously
+    async with application:
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling()
+        
+        # Keep running until cancelled
+        while True:
+            await asyncio.sleep(3600)
+
+def main():
+    try:
+        asyncio.run(run_bot())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot stopped.")
 
 if __name__ == "__main__":
     main()
