@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
@@ -55,14 +56,12 @@ def get_total_users_count():
 
 # Track both old members (when they message) and new members (when they join)
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check for new members joining
     if update.message and update.message.new_chat_members:
         for member in update.message.new_chat_members:
             if not member.is_bot:
                 add_user(member.id, member.username, member.full_name)
                 logger.info(f"New member saved: {member.id} ({member.full_name})")
     
-    # Track any active user sending messages (Old members & participants)
     elif update.effective_user and not update.effective_user.is_bot:
         user = update.effective_user
         add_user(user.id, user.username, user.full_name)
@@ -98,6 +97,8 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.message:
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+    elif update.callback_query:
+        await update.callback_query.message.edit_text```python
     elif update.callback_query:
         await update.callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode="Markdown")
         await update.callback_query.answer()
@@ -171,9 +172,5 @@ def main():
     # Track message senders and new chat members across groups/chats
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, track_users))
 
-    # Run bot
+    # Run bot with explicit event loop configuration for Python 3.14 / Render compatibility
     print("Bot is up and running...")
-    application.run_polling()
-
-if __name__ == "__main__":
-    main()
