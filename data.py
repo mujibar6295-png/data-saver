@@ -98,8 +98,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     elif update.callback_query:
-        await update.callback_query.message.edit_text```python
-    elif update.callback_query:
         await update.callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode="Markdown")
         await update.callback_query.answer()
 
@@ -172,5 +170,8 @@ def main():
     # Track message senders and new chat members across groups/chats
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, track_users))
 
-    # Run bot with explicit event loop configuration for Python 3.14 / Render compatibility
     print("Bot is up and running...")
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
