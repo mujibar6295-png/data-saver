@@ -1,12 +1,26 @@
 import logging
 import sqlite3
 import asyncio
+import os
+from threading import Thread
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 # Logging setup
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Dummy Flask server for Render port binding
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def home():
+    return "Bot is alive and running!"
+
+def keep_alive():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
 
 # Bot Token and Admin ID
 TOKEN = "8874940658:AAFV6FcKwFJWGVzNC6qq213dNoiHA-p_xK0"
@@ -137,7 +151,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# Inline button callback
+# Inline button handler
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
@@ -155,7 +169,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown"
         )
 
-# Main async runner (Python 3.12, 3.13, 3.14 compatible)
 async def run_bot():
     init_db()
     
@@ -169,17 +182,20 @@ async def run_bot():
 
     print("Bot is up and running...")
     
-    # Initialize and start polling asynchronously
     async with application:
         await application.initialize()
         await application.start()
-        await application.updater.start_polling()
+        # drop_pending_updates=True দিলে আগের আটকে থাকা সব রিকোয়েস্ট ক্লিয়ার করে নেবে
+        await application.updater.start_polling(drop_pending_updates=True)
         
-        # Keep running until cancelled
         while True:
             await asyncio.sleep(3600)
 
 def main():
+    # Start background web server for Render port check
+    server_thread = Thread(target=keep_alive, daemon=True)
+    server_thread.start()
+
     try:
         asyncio.run(run_bot())
     except (KeyboardInterrupt, SystemExit):
