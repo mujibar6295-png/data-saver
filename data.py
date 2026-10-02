@@ -23,7 +23,7 @@ def keep_alive():
     web_app.run(host="0.0.0.0", port=port)
 
 # Bot Token and Admin ID
-TOKEN = "8874940658:AAFV6FcKwFJWGVzNC6qq213dNoiHA-p_xK0"
+TOKEN = "8874940658:AAFkAOHl64qwql239m1RzB73xLrMtszmO38"
 ADMIN_ID = 5624448603
 
 # SQLite Database Setup
